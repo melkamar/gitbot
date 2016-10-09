@@ -3,6 +3,7 @@ import requests
 import configparser
 import logging
 import re
+import time
 
 logging.basicConfig(format="%(asctime)s: %(levelname)s: %(message)s")
 logger = logging.getLogger(__file__)
@@ -12,12 +13,28 @@ edit_issue_url = 'https://api.github.com/repos/{}/issues/{}'
 github_session = None
 rules = []
 
+init_message = """
+_____________________________________________
+Repository processing started. Configuration:
+Repository: {}
+Verbosity: {}
+Using auth file: {}
+File of rules: {}
+Checking interval: {}
+Default label: {}
+Skip labelled issues: {}
+Search in comments: {}
+Process closed issues: {}
+Process issue title: {}
+Remove current labels: {}
+_____________________________________________
+"""
+
 
 class Rule:
     def __init__(self, regex, label):
         self.label = label.strip()
-        # self.regex = re.compile(regex) # TODO enable compiling
-        self.regex = regex
+        self.regex = re.compile(regex)
 
     def __str__(self, *args, **kwargs):
         return 'RULE: {}   --->   {}'.format(self.regex, self.label)
@@ -48,14 +65,13 @@ class Issue:
         self.reponame = reponame
 
     def __str__(self):
-        return 'Title: {}, URL: {}, Number: {}, Body: {}, ' \
-               'Open: {}, Labels: {}, Comments url: {}'.format(self.title,
-                                                               self.url,
-                                                               self.number,
-                                                               self.body,
-                                                               self.state_open,
-                                                               self.labels,
-                                                               self.comments_url)
+        return 'Number #{}, Title: [{}], Body: [{}], URL: {}, ' \
+               'Open: {}, Labels: {}'.format(self.number,
+                                             self.title,
+                                             self.body,
+                                             self.url,
+                                             self.state_open,
+                                             self.labels)
 
     def has_labels(self):
         return len(self.labels) > 0
@@ -110,7 +126,8 @@ def init_rules(filename):
             rules.append(Rule.parse(line))
 
 
-def process_issues(token, repository, default_label, skip_labelled, process_comments, process_closed_issues):
+def process_issues(token, repository, default_label, skip_labelled, process_comments, process_closed_issues,
+                   process_title, remove_current):
     """
     Main handling logic of the robot.
     :return:
@@ -132,10 +149,10 @@ def process_issues(token, repository, default_label, skip_labelled, process_comm
             logger.debug("  -> Skipping because it has labels and skip_labelled is True.")
             continue
 
-        process_issue(issue)
+        process_issue(issue, default_label, process_comments, process_title, remove_current)
 
 
-def apply_labels(issue, labels):
+def apply_labels(issue, labels, remove_current):
     if not labels:
         return
 
@@ -143,43 +160,69 @@ def apply_labels(issue, labels):
 
     patchurl = edit_issue_url.format(issue.reponame, issue.number)
 
-    data = {
-        "labels": list(labels)
-    }
+    if not remove_current:
+        # Init data with the current labels - we do not want to overwrite any
+        data = {
+            "labels": list(labels)
+        }
+    else:
+        data = []
 
     for label in issue.labels:
         data['labels'].append(label['name'])
 
     logger.debug("  Sending PATCH to {}. Data: {}".format(patchurl, data))
 
-    res = github_session.patch(patchurl, json=data, headers={"Content-Type": "text/plain"})
-    logger.debug("  Request: {}".format(res.request.body))
-    res.raise_for_status()
+    try:
+        res = github_session.patch(patchurl, json=data, headers={"Content-Type": "text/plain"})
+        res.raise_for_status()
+    except requests.HTTPError:
+        logger.error("A HTTP error occurred when updating an issue. Code: {}\nFull error: {}".format(res.status_code,
+                                                                                                     res.content))
 
 
-def process_issue(issue):
-    # TODO handle some stuff
-    # TODO add parameter for checking title of issue
-
+def process_issue(issue, default_label, process_comments, process_title, remove_current):
     labels = []
     for rule in rules:
         logger.debug("  Checking rule {}".format(rule))
-        newlabel = rule.check_fits(issue.body)
+        new_label = rule.check_fits(issue.body)
 
-        if not newlabel:
-            newlabel = rule.check_fits(issue.title)
+        if not new_label and process_title:
+            new_label = rule.check_fits(issue.title)
 
-        if newlabel:
-            labels.append(newlabel)
+        # try to match anything beside comments first,
+        # comments need to be fetched and that should be avoided if possible
+        if not new_label and process_comments:
+            comments = fetch_comments(issue)
+            for comment in comments:
+                new_label = rule.check_fits(comment)
+                if new_label:
+                    break
 
-    apply_labels(issue, labels)
+        if new_label:
+            labels.append(new_label)
+
+    if default_label and not labels:
+        labels.append(default_label)
+
+    apply_labels(issue, labels, remove_current)
 
 
 def fetch_issues(repository, state):
     get_url = fetch_issues_url.format(repository, state)
-    logger.debug("Fetching issues: {}".format(get_url))
-    response = github_session.get(get_url)
-    response.raise_for_status()
+    logger.info("Fetching issues: {}".format(get_url))
+
+    try:
+        response = github_session.get(get_url)
+        response.raise_for_status()
+    except requests.HTTPError:
+        logger.error(
+            "A HTTP error occurred when fetching issues. Code: {}\nFull error: {}".format(response.status_code,
+                                                                                          response.content))
+        return []
+    except requests.ConnectionError as e:
+        logger.error("Could not establish connection with GitHub. Full error: {}".format(e))
+        return []
 
     issues = []
     json_res = response.json()
@@ -190,10 +233,15 @@ def fetch_issues(repository, state):
 
 
 def fetch_comments(issue):
-    response = github_session.get(issue.comments_url)
-    response.raise_for_status()
-
-    return [comment['body'] for comment in response.json()]
+    try:
+        response = github_session.get(issue.comments_url)
+        response.raise_for_status()
+        return [comment['body'] for comment in response.json()]
+    except requests.HTTPError:
+        logger.error(
+            "A HTTP error occurred when fetching comments. Code: {}\nFull error: {}".format(response.status_code,
+                                                                                            response.content))
+        return []
 
 
 def get_token(filename):
@@ -223,29 +271,32 @@ def log_num_to_level(value):
               help="If true, comments will be also processed by the rules.")
 @click.option('--closed-issues/--no-closed-issues', 'process_closed_issues', default=False,
               help="Should closed issues be still processed?")
+@click.option('--process-title/--no-process-title', 'process_title', default=True,
+              help="Should the title of the issue be matched against the rules as well?")
+@click.option('--remove-current/--no-remove-current', 'remove_current', default=False,
+              help="Should the current labels on an issue be removed if a rule matches?")
 def main(repository, auth, verbose, rules_file, interval, default_label, skip_labelled, process_comments,
-         process_closed_issues):
+         process_closed_issues, process_title, remove_current):
     """
     REPOSITORY - Name of the repository to process, e.g. melkamar/mi-pyt-1
     """
+
     logger.level = log_num_to_level(verbose)
+    while True:
+        logger.warning(init_message.format(repository, logger.level, auth, rules_file, interval,
+                                           default_label,
+                                           skip_labelled,
+                                           process_comments, process_closed_issues, process_title,
+                                           remove_current))
+        init_rules(rules_file)
+        for rule in rules:
+            logger.debug(rule)
 
-    logger.info("""Repository: {}
-    Verbosity: {}
-    Using auth file: {}
-    File of rules: {}
-    Checking interval: {}
-    Default label: {}
-    Skip labelled issues: {}
-    Search in comments: {}
-    Closed issues: {}""".format(repository, logger.level, auth, rules_file, interval, default_label, skip_labelled,
-                                process_comments, process_closed_issues))
+        process_issues(get_token(auth), repository, default_label, skip_labelled, process_comments,
+                       process_closed_issues,
+                       process_title, remove_current)
 
-    init_rules(rules_file)
-    for rule in rules:
-        logger.debug(rule)
-
-    process_issues(get_token(auth), repository, default_label, skip_labelled, process_comments, process_closed_issues)
+        time.sleep(interval)
 
 
 if __name__ == '__main__':
