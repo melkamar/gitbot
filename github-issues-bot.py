@@ -302,14 +302,14 @@ def log_num_to_level(value):
 @click.option('-i', '--interval', default=60, help="Interval of repository checking in seconds. Default is 60 seconds.")
 @click.option('-d', '--default-label', 'default_label', default="",
               help="Label to apply to an issue if no other rule applies. If empty, no label is applied. Defaults to no label.")
-@click.option('--skip-labelled/--no-skip-labelled', 'skip_labelled', default=True,
-              help="Should issues that are labelled already be skipped? Defaults to true.")
+@click.option('--process-title/--no-process-title', 'process_title', default=True,
+              help="Should the title of the issue be matched against the rules as well? Defaults to true.")
 @click.option('--comments/--no-comments', 'process_comments', default=True,
               help="Should comments be also matched against the rules? Defaults to true.")
 @click.option('--closed-issues/--no-closed-issues', 'process_closed_issues', default=False,
               help="Should closed issues be still processed? Defaults to false.")
-@click.option('--process-title/--no-process-title', 'process_title', default=True,
-              help="Should the title of the issue be matched against the rules as well? Defaults to true.")
+@click.option('--skip-labelled/--no-skip-labelled', 'skip_labelled', default=True,
+              help="Should issues that are labelled already be skipped? Defaults to true.")
 @click.option('--remove-current/--no-remove-current', 'remove_current', default=False,
               help="Should the current labels on an issue be removed if a rule matches? Defaults to false.")
 def main(repositories, auth, verbose, rules_file, interval, default_label, skip_labelled, process_comments,
