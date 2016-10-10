@@ -282,9 +282,14 @@ def fetch_comments(issue):
 
 def read_token(filename):
     config = configparser.ConfigParser()
-    config.read(filename)
-    return config['auth']['gittoken']
-
+    try:
+        config.read(filename)
+        token = config['auth']['gittoken']
+        return token
+    except KeyError:
+        logger.error(
+            "Could not find token in file {}. It has to be named 'gittoken' in section [auth].".format(filename))
+        exit(1)
 
 def log_num_to_level(value):
     return {
@@ -294,7 +299,7 @@ def log_num_to_level(value):
 
 
 @click.command()
-@click.argument('repositories', nargs=-1)
+@click.argument('repositories', nargs=-1, required=True)
 @click.option('-a', '--auth', default="auth.cfg", help="Authentication file. See auth.cfg.sample.")
 @click.option('-v', '--verbose', count=True,
               help="Much verbosity. May be repeated multiple times. More v's, more info!")
@@ -326,11 +331,13 @@ def main(repositories, auth, verbose, rules_file, interval, default_label, skip_
                                            process_comments, process_closed_issues, process_title,
                                            remove_current))
         init_rules(rules_file)
+        token = read_token(auth)
+
         for rule in rules:
             logger.debug(rule)
 
         for repository in repositories:
-            process_issues(read_token(auth), repository, default_label, skip_labelled, process_comments,
+            process_issues(token, repository, default_label, skip_labelled, process_comments,
                            process_closed_issues,
                            process_title, remove_current)
 
