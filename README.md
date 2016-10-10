@@ -1,7 +1,7 @@
-# mi-pyt-1
+# Python task 1 - GitHub issues bot
 
 ## Quick oneliner
-`python .\github-issues-bot.py -i 30 -d default-tag --no-comments --no-process-title melkamar/mi-pyt-test-issues`  
+`python ./github-issues-bot.py -i 30 -d default-tag --no-comments --no-process-title melkamar/mi-pyt-test-issues`  
 Will process only body of the issue report. Any further comments nor the title of the issue will not be matched against rules.
 
 ## Rules
