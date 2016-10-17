@@ -75,7 +75,9 @@ def handle_root():
     See https://github.com/melkamar/mi-pyt-1/ for more information.
 
     To quickly start, fill in auth.cfg and rules.cfg files and set up your GitHub repository to report
-    newly created issues via a webhook to <servername>/callback."""
+    newly created issues via a webhook to <servername>/callback.
+
+    You will also need to set up the secret webhook key for GitHub."""
 
 
 @app.route('/callback', methods=['POST'])
