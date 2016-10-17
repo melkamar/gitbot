@@ -1,3 +1,4 @@
+import os
 from flask import Flask
 from flask import request
 import github_issues_bot
@@ -5,7 +6,7 @@ import github_issues_bot
 app = Flask(__name__)
 
 actions_to_process = ['opened', 'edited']
-github_issues_bot.init_rules("rules.cfg")
+github_issues_bot.init_rules(os.path.join(os.path.dirname(__file__), "rules.cfg"))
 
 
 def should_process_issue(json_txt):
@@ -30,7 +31,7 @@ def handle_callback():
         return "Not processing issue. Will only process actions: {}. Received: {}.".format(actions_to_process,
                                                                                            data['action'])
 
-    web_token = github_issues_bot.read_token('auth.cfg')
+    web_token = github_issues_bot.read_token(os.path.join(os.path.dirname(__file__), "auth.cfg"))
 
     github_issues_bot.init_session(web_token)
     github_issues_bot.process_issue(github_issues_bot.Issue.parse(data['issue'], parse_repo(data)))

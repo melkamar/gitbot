@@ -4,10 +4,10 @@ import configparser
 import logging
 import re
 import time
-import flask
 
-logging.basicConfig(format="%(asctime)s: %(levelname)s: %(message)s", level=logging.DEBUG)
+logging.basicConfig(format="%(asctime)s: %(levelname)s: %(message)s", level=logging.DEBUG, filename="bot.log")
 logger = logging.getLogger(__file__)
+logger.addHandler(logging.StreamHandler())
 
 fetch_issues_url = 'https://api.github.com/repos/{}/issues?state={}'
 edit_issue_url = 'https://api.github.com/repos/{}/issues/{}'
