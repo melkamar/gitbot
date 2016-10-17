@@ -352,6 +352,8 @@ def console(repositories, auth, verbose, rules_file, interval, default_label, sk
 
 @cli.command()
 def web():
+    """Running in web mode will automatically label all issues that are posted to the app at endpoint /callback.
+    You will need the GitHub webhook secret set up both at GitHub and in the auth.cfg file for it to work."""
     from web_listener import app
     app.run(debug=True)
 

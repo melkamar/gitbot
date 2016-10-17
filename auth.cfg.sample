@@ -1,2 +1,3 @@
 [auth]
 gittoken=<your token>
+hook_secret=<github hook secret>

@@ -1,7 +1,10 @@
 import os
 from flask import Flask
 from flask import request
+import configparser
 import github_issues_bot
+import hmac
+import hashlib
 
 app = Flask(__name__)
 
@@ -9,6 +12,21 @@ actions_to_process = ['opened', 'edited']
 
 github_issues_bot.init_rules(os.path.join(os.path.dirname(__file__), "rules.cfg"))
 web_token = github_issues_bot.read_token(os.path.join(os.path.dirname(__file__), "auth.cfg"))
+
+
+def read_github_secret():
+    config = configparser.ConfigParser()
+    try:
+        config.read(os.path.join(os.path.dirname(__file__), "auth.cfg"))
+        token = config['auth']['hook_secret']
+        return token
+    except KeyError:
+        github_issues_bot.logger.error(
+            "Could not find hook secret in file auth.cfg. It has to be named 'hook_secret' in section [auth].")
+        exit(1)
+
+
+HOOK_SECRET_KEY = read_github_secret()
 
 
 def should_process_issue(json_data):
@@ -39,6 +57,18 @@ def parse_repo(json_data):
         raise e
 
 
+def check_secret_integrity():
+    secret_header = request.headers['X-Hub-Signature']
+    sha_name, signature = secret_header.split('=')
+    if sha_name != 'sha1':
+        return False
+
+    # HMAC requires its key to be bytes, but data is strings.
+    mac = hmac.new(bytearray(HOOK_SECRET_KEY, encoding="utf-8"), msg=request.data, digestmod=hashlib.sha1)
+    github_issues_bot.logger.warn("Calculated hash: {}".format(mac.hexdigest()))
+    return str(mac.hexdigest()) == str(signature)
+
+
 @app.route('/')
 def handle_root():
     return """This web app will label issues based on their content and defined regexp rules.
@@ -54,9 +84,23 @@ def handle_callback():
     Handle GitHub issue callback.
     :return:
     """
-    github_issues_bot.logger.debug("Processing callback. Request: {}".format(request.get_json()))
+    try:
+        if not check_secret_integrity():
+            github_issues_bot.logger.error(
+                "Secret signature does not match!!! {} - Request will not be processed.".format(
+                    request.headers['X-Hub-Signature']))
+            return "Secret signature does not match!!! {} - Request will not be processed.".format(
+                request.headers['X-Hub-Signature'])
+        else:
+            github_issues_bot.logger.info("Secret signature did match.")
+    except KeyError as e:
+        github_issues_bot.logger.error(
+            "Secret signature was not sent with request!!! It will not be processed.")
+        return "Secret signature was not sent with request!!! It will not be processed."
 
+    github_issues_bot.logger.debug("Processing callback. Request: {}".format(request.get_json()))
     data = request.get_json()
+
     try:
         if not should_process_issue(data):
             txt = "Not processing issue. Will only process actions: {}. Received: {}.".format(actions_to_process,
