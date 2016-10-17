@@ -4,14 +4,17 @@ import configparser
 import logging
 import re
 import time
+import flask
 
-logging.basicConfig(format="%(asctime)s: %(levelname)s: %(message)s")
+logging.basicConfig(format="%(asctime)s: %(levelname)s: %(message)s", level=logging.DEBUG)
 logger = logging.getLogger(__file__)
 
 fetch_issues_url = 'https://api.github.com/repos/{}/issues?state={}'
 edit_issue_url = 'https://api.github.com/repos/{}/issues/{}'
 github_session = None
 rules = []
+
+# app = flask.Flask(__name__)
 
 init_message = """
 _____________________________________________
@@ -132,13 +135,13 @@ def init_rules(filename):
             rules.append(Rule.parse(line))
 
 
-def process_issues(token, repository, default_label, skip_labelled, process_comments, process_closed_issues,
-                   process_title, remove_current):
+def process_issues(token, repository, default_label="", skip_labelled=True, process_comments=True,
+                   process_closed_issues=False, process_title=True, remove_current=False):
     """
     Main handling logic of the robot. Process issues in a given repository with the given settings.
     Parameters correspond to command-line arguments.
     """
-
+    print("process issues")
     init_session(token)
 
     if process_closed_issues:
@@ -195,7 +198,7 @@ def apply_labels(issue, labels, remove_current):
                                                                                                      res.content))
 
 
-def process_issue(issue, default_label, process_comments, process_title, remove_current):
+def process_issue(issue, default_label="", process_comments=True, process_title=True, remove_current=False):
     """
     Handle rule matching and label adding on a given issue.
     :param issue:
@@ -291,6 +294,7 @@ def read_token(filename):
             "Could not find token in file {}. It has to be named 'gittoken' in section [auth].".format(filename))
         exit(1)
 
+
 def log_num_to_level(value):
     return {
         1: logging.INFO,
@@ -298,7 +302,12 @@ def log_num_to_level(value):
     }.get(value, logging.WARNING)
 
 
-@click.command()
+@click.group()
+def cli():
+    pass
+
+
+@cli.command()
 @click.argument('repositories', nargs=-1, required=True)
 @click.option('-a', '--auth', default="auth.cfg", help="Authentication file. See auth.cfg.sample.")
 @click.option('-v', '--verbose', count=True,
@@ -317,12 +326,8 @@ def log_num_to_level(value):
               help="Should issues that are labelled already be skipped? Defaults to true.")
 @click.option('--remove-current/--no-remove-current', 'remove_current', default=False,
               help="Should the current labels on an issue be removed if a rule matches? Defaults to false.")
-def main(repositories, auth, verbose, rules_file, interval, default_label, skip_labelled, process_comments,
-         process_closed_issues, process_title, remove_current):
-    """
-    REPOSITORIES - Names of the repositories to process, e.g. melkamar/mi-pyt-1. Accepts whitespace-separated list.
-    """
-
+def console(repositories, auth, verbose, rules_file, interval, default_label, skip_labelled, process_comments,
+            process_closed_issues, process_title, remove_current):
     logger.level = log_num_to_level(verbose)
     while True:
         logger.warning(init_message.format(repositories, logger.level, auth, rules_file, interval,
@@ -345,5 +350,11 @@ def main(repositories, auth, verbose, rules_file, interval, default_label, skip_
         time.sleep(interval)
 
 
+@cli.command()
+def web():
+    from web_listener import app
+    app.run(debug=True)
+
+
 if __name__ == '__main__':
-    main()
+    cli()
