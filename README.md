@@ -7,8 +7,11 @@ a set of regular expression rules.
 
 ### Operation modes
 There are two ways of running the bot:
+
 * **Console** - actively polls GitHub for new issues and based on given options labels them. Run as `github_issues_bot.py console (...)`
-* **Web app** - passively listens for GitHub's webhooks informing about new or changed issues. May be run from command line as `github_issues_bot.py web`
+* **Web app** - passively listens for GitHub's webhooks informing about new or changed issues. The endpoint listening
+for GitHub calls is `/callback`.
+May be run from command line as `github_issues_bot.py web`
   or deployed as a WSGI application using this wsgi config:
 ```
 import sys
@@ -33,6 +36,7 @@ Bot needs an authentication token with permissions to label issues. Token is sto
 For web usage, the webhook secret has to be set in `auth.cfg` as well as the repository to be handled. The script will not do anything if the security check fails.
 
 ## Detailed parameters for console mode
+
 ```
 Usage: github_issues_bot.py console [OPTIONS] REPOSITORIES...
 
@@ -62,4 +66,4 @@ Options:
                                   removed if a rule matches? Defaults to
                                   false.
   --help                          Show this message and exit.
-  ```
+```

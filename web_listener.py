@@ -1,10 +1,12 @@
+import textwrap
 import os
-from flask import Flask
-from flask import request
+from flask import Flask, request, render_template
 import configparser
 import github_issues_bot
 import hmac
 import hashlib
+import jinja2
+import markdown
 
 app = Flask(__name__)
 
@@ -12,6 +14,9 @@ actions_to_process = ['opened', 'edited']
 
 github_issues_bot.init_rules(os.path.join(os.path.dirname(__file__), "rules.cfg"))
 web_token = github_issues_bot.read_token(os.path.join(os.path.dirname(__file__), "auth.cfg"))
+
+with open(os.path.join(os.path.dirname(__file__), "README.md")) as f:
+    readme_text = f.read()
 
 
 def read_github_secret():
@@ -69,15 +74,16 @@ def check_secret_integrity():
     return str(mac.hexdigest()) == str(signature)
 
 
+@app.template_filter('markdown')
+def convert_markdown(text):
+    text = textwrap.dedent(text)
+    result = jinja2.Markup(markdown.markdown(text, extensions=['markdown.extensions.fenced_code']))
+    return result
+
+
 @app.route('/')
 def handle_root():
-    return """This web app will label issues based on their content and defined regexp rules.
-    See https://github.com/melkamar/mi-pyt-1/ for more information.
-
-    To quickly start, fill in auth.cfg and rules.cfg files and set up your GitHub repository to report
-    newly created issues via a webhook to <servername>/callback.
-
-    You will also need to set up the secret webhook key for GitHub."""
+    return render_template("about.html", bodytext=readme_text)
 
 
 @app.route('/callback', methods=['POST'])

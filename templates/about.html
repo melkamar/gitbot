@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+    <title>About GitHub issues bot</title>
+</head>
+<body>
+<div class="container">
+    <h1>GitHub issues bot index page</h1>
+    <p>
+        This is the index page of GitHub issues bot. For information about usage, see <i>Operation modes - Web app</i>
+        below.
+    </p>
+    <p>
+        To get started quickly:
+    <ol>
+        <li>Set up a GitHub repository hook to report events of <i>Issues</i> to endpoint
+            <code>/callback</code>.
+        </li>
+        <li>Set up the <code>webhook secret</code> to secret defined in file <code>auth.cfg</code>.
+            (Default is <code>ahoj</code>)
+        </li>
+    </ol>
+    </p>
+
+    {{ bodytext|markdown }}
+</div>
+</body>
+</html>
