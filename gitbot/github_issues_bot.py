@@ -1,9 +1,10 @@
-import click
-import requests
 import configparser
 import logging
 import re
 import time
+
+import click
+import requests
 
 logging.basicConfig(format="%(asctime)s: %(levelname)s: %(message)s", level=logging.DEBUG, filename="bot.log")
 logger = logging.getLogger(__file__)
@@ -354,7 +355,7 @@ def console(repositories, auth, verbose, rules_file, interval, default_label, sk
 def web():
     """Running in web mode will automatically label all issues that are posted to the app at endpoint /callback.
     You will need the GitHub webhook secret set up both at GitHub and in the auth.cfg file for it to work."""
-    from web_listener import app
+    from gitbot.web_listener import app
     app.run(debug=True)
 
 

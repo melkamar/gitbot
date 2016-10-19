@@ -1,12 +1,14 @@
-import textwrap
-import os
-from flask import Flask, request, render_template
 import configparser
-import github_issues_bot
-import hmac
 import hashlib
+import hmac
+import os
+import textwrap
+
 import jinja2
 import markdown
+from flask import Flask, request, render_template
+
+from gitbot import github_issues_bot
 
 app = Flask(__name__)
 
