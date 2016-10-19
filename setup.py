@@ -9,11 +9,11 @@ setup(
     maintainer='Martin Melka',
     maintainer_email='melkamar@fit.cvut.cz',
     license='MIT',
-    url='https://gist.github.com/oskar456/e91ef3ff77476b0dbc4ac19875d0555e',
+    url='https://github.com/melkamar/gitbot',
     packages=find_packages(),
     entry_points={
         'console_scripts': [
-            'gitbot = gitbot.github_issues_bot.py:main'
+            'gitbot = gitbot.github_issues_bot:main'
         ]
     },
     install_requires=['flask', 'click>=6', 'requests']

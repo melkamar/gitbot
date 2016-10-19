@@ -304,11 +304,11 @@ def log_num_to_level(value):
 
 
 @click.group()
-def cli():
+def main():
     pass
 
 
-@cli.command()
+@main.command()
 @click.argument('repositories', nargs=-1, required=True)
 @click.option('-a', '--auth', default="auth.cfg", help="Authentication file. See auth.cfg.sample.")
 @click.option('-v', '--verbose', count=True,
@@ -351,7 +351,7 @@ def console(repositories, auth, verbose, rules_file, interval, default_label, sk
         time.sleep(interval)
 
 
-@cli.command()
+@main.command()
 def web():
     """Running in web mode will automatically label all issues that are posted to the app at endpoint /callback.
     You will need the GitHub webhook secret set up both at GitHub and in the auth.cfg file for it to work."""
@@ -360,4 +360,4 @@ def web():
 
 
 if __name__ == '__main__':
-    cli()
+    main()
