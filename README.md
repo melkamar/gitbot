@@ -5,6 +5,12 @@
 Will label issues on GitHub based on the issues' title, contents and/or comments. Labelling is determined by
 a set of regular expression rules.
 
+### pip installation
+`pip install gitbot`
+
+Installs a `gitbot` executable.
+
+
 ### Operation modes
 There are two ways of running the bot:
 
