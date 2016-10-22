@@ -8,6 +8,9 @@ import click
 import requests
 import appdirs
 
+# from gitbot import web_listener
+# import gitbot.web_listener
+
 logging.basicConfig(format="%(asctime)s: %(levelname)s: %(message)s", level=logging.DEBUG, filename="bot.log")
 logger = logging.getLogger(__file__)
 logger.addHandler(logging.StreamHandler())
@@ -378,20 +381,8 @@ def console(repositories, auth, verbose, rules_file, interval, default_label, sk
                                            process_comments, process_closed_issues, process_title,
                                            remove_current))
 
-        try:
-            init_rules(rules_file)
-        except FileNotFoundError as err:
-            fn = os.path.join(get_config_dir(), "rules.cfg")
-            logger.warn("Rules file {} not found. Will try file in user config dir: {}".format(rules_file, fn))
-            try:
-                init_rules(fn)
-                logger.warn("... user rules config file found. OK.")
-            except FileNotFoundError as err:
-                logger.error(
-                    "Rules file {} not found either. You need to supply it. "
-                    "Run script with \"generate\" command.".format(fn))
-                exit(1)
-
+        print("console init")
+        init_rules(rules_file)
         token = read_auth(auth, "auth", "gittoken")
 
         for rule in rules:
@@ -406,12 +397,14 @@ def console(repositories, auth, verbose, rules_file, interval, default_label, sk
         time.sleep(interval)
 
 
+
 @main.command()
 def web():
     """Running in web mode will automatically label all issues that are posted to the app at endpoint /callback.
     You will need the GitHub webhook secret set up both at GitHub and in the auth.cfg file for it to work."""
-    from gitbot.web_listener import app
-    app.run(debug=True)
+    from gitbot import web_listener
+    web_listener.app.run(debug=True)
+    # print("not")
 
 
 auth_sample = """[auth]
