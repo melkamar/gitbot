@@ -8,9 +8,6 @@ import click
 import requests
 import appdirs
 
-# from gitbot import web_listener
-# import gitbot.web_listener
-
 logging.basicConfig(format="%(asctime)s: %(levelname)s: %(message)s", level=logging.DEBUG, filename="bot.log")
 logger = logging.getLogger(__file__)
 logger.addHandler(logging.StreamHandler())
@@ -19,8 +16,6 @@ fetch_issues_url = 'https://api.github.com/repos/{}/issues?state={}'
 edit_issue_url = 'https://api.github.com/repos/{}/issues/{}'
 github_session = None
 rules = []
-
-# app = flask.Flask(__name__)
 
 init_message = """
 _____________________________________________
@@ -175,7 +170,6 @@ def process_issues(token, repository, default_label="", skip_labelled=True, proc
     Main handling logic of the robot. Process issues in a given repository with the given settings.
     Parameters correspond to command-line arguments.
     """
-    print("process issues")
     init_session(token)
 
     if process_closed_issues:
@@ -381,7 +375,6 @@ def console(repositories, auth, verbose, rules_file, interval, default_label, sk
                                            process_comments, process_closed_issues, process_title,
                                            remove_current))
 
-        print("console init")
         init_rules(rules_file)
         token = read_auth(auth, "auth", "gittoken")
 
@@ -403,7 +396,7 @@ def web():
     """Running in web mode will automatically label all issues that are posted to the app at endpoint /callback.
     You will need the GitHub webhook secret set up both at GitHub and in the auth.cfg file for it to work."""
     from gitbot import web_listener
-    web_listener.app.run(debug=True)
+    web_listener.app.run(debug=True, host="0.0.0.0")
     # print("not")
 
 

@@ -13,7 +13,6 @@ app = Flask(__name__)
 
 actions_to_process = ['opened', 'edited']
 
-print ("web init rules")
 github_issues_bot.init_rules(os.path.join(github_issues_bot.get_app_dir(), "rules.cfg"))
 
 web_token = github_issues_bot.read_auth(os.path.join(github_issues_bot.get_app_dir(), "auth.cfg"), "auth", "gittoken")
@@ -24,16 +23,6 @@ with open(os.path.join(github_issues_bot.get_pkg_dir(), "README.md")) as f:
 
 def read_github_secret():
     return github_issues_bot.read_auth(os.path.join(github_issues_bot.get_app_dir(), "auth.cfg"), "auth", "hook_secret")
-
-    # config = configparser.ConfigParser()
-    # try:
-    #     config.read(os.path.join(os.path.dirname(__file__), "auth.cfg"))
-    #     token = config['auth']['hook_secret']
-    #     return token
-    # except KeyError:
-    #     github_issues_bot.logger.error(
-    #         "Could not find hook secret in file auth.cfg. It has to be named 'hook_secret' in section [auth].")
-    #     exit(1)
 
 
 HOOK_SECRET_KEY = read_github_secret()

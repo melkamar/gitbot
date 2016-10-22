@@ -9,7 +9,7 @@ with open("README.md") as file:
 
 setup(
     name='gitbot',
-    version='0.3.5',
+    version='0.3.10',
     description='Automatically label GitHub issues based on regexp rules.',
     long_description=long_description,
     author='Martin Melka',
