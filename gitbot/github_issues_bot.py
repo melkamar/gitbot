@@ -1,10 +1,12 @@
 import configparser
 import logging
 import re
+import os
 import time
 
 import click
 import requests
+import appdirs
 
 logging.basicConfig(format="%(asctime)s: %(levelname)s: %(message)s", level=logging.DEBUG, filename="bot.log")
 logger = logging.getLogger(__file__)
@@ -100,6 +102,18 @@ class Issue:
         return issue
 
 
+def get_config_dir():
+    return appdirs.user_config_dir("gitbot", "melkamar")
+
+
+def get_app_dir():
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+
+
+def get_pkg_dir():
+    return os.path.abspath(os.path.join(os.path.dirname(__file__)))
+
+
 def init_session(token):
     """
     Create an authorized session object with GitHub.
@@ -112,6 +126,22 @@ def init_session(token):
 
 
 def init_rules(filename):
+    try:
+        init_rules_logic(filename)
+    except FileNotFoundError as err:
+        fn = os.path.join(get_config_dir(), "rules.cfg")
+        logger.warn("Rules file {} not found. Will try file in user config dir: {}".format(filename, fn))
+        try:
+            init_rules_logic(fn)
+            logger.warn("... user rules config file found. OK.")
+        except FileNotFoundError as err:
+            logger.error(
+                "Rules file {} not found either. You need to supply it. "
+                "Run script with \"generate\" command.".format(fn))
+            exit(1)
+
+
+def init_rules_logic(filename):
     """
     Initialize global rules variable with rules defined in a file.
     :param filename: File containing the rules.
@@ -284,16 +314,27 @@ def fetch_comments(issue):
         return []
 
 
-def read_token(filename):
+def read_auth(filename, section, key):
     config = configparser.ConfigParser()
     try:
         config.read(filename)
-        token = config['auth']['gittoken']
+        token = config[section][key]
         return token
     except KeyError:
-        logger.error(
-            "Could not find token in file {}. It has to be named 'gittoken' in section [auth].".format(filename))
-        exit(1)
+        fn = os.path.join(get_config_dir(), "auth.cfg")
+        logger.warn(
+            "[{}]{} setting in file {} not found. Will try file in user config dir: {}".format(section, key, filename,
+                                                                                               fn))
+        try:
+            filename = os.path.join(get_config_dir(), "auth.cfg")
+            config.read(filename)
+            token = config['auth']['gittoken']
+            logger.warn("... user auth config file found. OK.")
+            return token
+        except KeyError:
+            logger.error("[{}]{} setting in file {} not found either. You need to supply it. "
+                         "Run script with \"generate\" command.".format(section, key, fn))
+            exit(1)
 
 
 def log_num_to_level(value):
@@ -336,8 +377,22 @@ def console(repositories, auth, verbose, rules_file, interval, default_label, sk
                                            skip_labelled,
                                            process_comments, process_closed_issues, process_title,
                                            remove_current))
-        init_rules(rules_file)
-        token = read_token(auth)
+
+        try:
+            init_rules(rules_file)
+        except FileNotFoundError as err:
+            fn = os.path.join(get_config_dir(), "rules.cfg")
+            logger.warn("Rules file {} not found. Will try file in user config dir: {}".format(rules_file, fn))
+            try:
+                init_rules(fn)
+                logger.warn("... user rules config file found. OK.")
+            except FileNotFoundError as err:
+                logger.error(
+                    "Rules file {} not found either. You need to supply it. "
+                    "Run script with \"generate\" command.".format(fn))
+                exit(1)
+
+        token = read_auth(auth, "auth", "gittoken")
 
         for rule in rules:
             logger.debug(rule)
@@ -357,6 +412,43 @@ def web():
     You will need the GitHub webhook secret set up both at GitHub and in the auth.cfg file for it to work."""
     from gitbot.web_listener import app
     app.run(debug=True)
+
+
+auth_sample = """[auth]
+gittoken=<your token>
+hook_secret=<github hook secret>
+"""
+
+rules_sample = """#; Separate regex and assigned label by "=>".
+#; Spaces in the regex section DO MATTER! "xyz=>abc" is NOT "xyz => abc"
+
+bug\s+[^?]*=>bug
+help=>help wanted
+(how|what|why).*\?=>question
+"""
+
+
+@main.command()
+def generate():
+    """Generates config files necessary for the program to run."""
+    config_dir = get_config_dir()
+    os.makedirs(config_dir, exist_ok=True)
+
+    fn = os.path.join(config_dir, "auth.cfg.sample")
+    if os.path.exists(fn):
+        print("File {} already exists. If you want to create a new one, delete it and rerun this command.".format(fn))
+    else:
+        with open(fn, "w") as file:
+            file.writelines(auth_sample)
+        print("Created file {}. Edit it to your needs.".format(fn))
+
+    fn = os.path.join(config_dir, "rules.cfg")
+    if os.path.exists(fn):
+        print("File {} already exists. If you want to create a new one, delete it and rerun this command.".format(fn))
+    else:
+        with open(fn, "w") as file:
+            file.writelines(rules_sample)
+        print("Created file {}. Edit it to your needs.".format(fn))
 
 
 if __name__ == '__main__':
