@@ -36,7 +36,7 @@ setup(
             'gitbot = gitbot.github_issues_bot:main'
         ]
     },
-    install_requires=['flask', 'click>=6', 'requests', 'appdirs', 'markdown', ]
+    install_requires=['flask', 'click>=6', 'requests', 'appdirs', 'markdown', 'configparser']
 )
 
 os.remove("gitbot/README.md")
