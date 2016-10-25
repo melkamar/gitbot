@@ -3,13 +3,14 @@ import shutil
 import os
 
 shutil.copy("README.md", "gitbot/")
+shutil.copy("README.md", "README")
 
 with open("README.md") as file:
     long_description = file.read()
 
 setup(
     name='gitbot',
-    version='0.3.10',
+    version='0.3.11',
     description='Automatically label GitHub issues based on regexp rules.',
     long_description=long_description,
     author='Martin Melka',
@@ -39,4 +40,5 @@ setup(
     install_requires=['flask', 'click>=6', 'requests', 'appdirs', 'markdown', 'configparser']
 )
 
+os.remove("README")
 os.remove("gitbot/README.md")
