@@ -119,14 +119,19 @@ def get_pkg_dir():
     return os.path.abspath(os.path.join(os.path.dirname(__file__)))
 
 
-def init_session(token):
+def init_session(token, session=None):
     """
     Create an authorized session object with GitHub.
     :param token: Auth token for GitHub.
     :return: Requests session object.
     """
     global github_session
-    github_session = requests.Session()
+
+    if not session:
+        github_session = requests.Session()
+    else:
+        github_session = session
+
     github_session.headers.update({'Authorization': 'token ' + token, 'User-Agent': 'Python'})
 
 
@@ -233,7 +238,7 @@ def apply_labels(issue, labels, remove_current):
                                                                                                      res.content))
 
 
-def process_issue(issue, default_label="", process_comments=True, process_title=True, remove_current=False):
+def process_issue(issue, default_label="", process_comments=True, process_title=True, remove_current=False, session=None):
     """
     Handle rule matching and label adding on a given issue.
     :param issue:
@@ -254,7 +259,7 @@ def process_issue(issue, default_label="", process_comments=True, process_title=
         # try to match anything beside comments first,
         # comments need to be fetched and that should be avoided if possible
         if not new_label and process_comments:
-            comments = fetch_comments(issue)
+            comments = fetch_comments(issue, session)
             for comment in comments:
                 new_label = rule.check_fits(comment)
                 if new_label:
@@ -271,7 +276,7 @@ def process_issue(issue, default_label="", process_comments=True, process_title=
     apply_labels(issue, labels, remove_current)
 
 
-def fetch_issues(repository, state):
+def fetch_issues(repository, state, session=None):
     """
     Fetches all issues in a repository with the given state.
     :param repository:
@@ -282,7 +287,10 @@ def fetch_issues(repository, state):
     logger.info("Fetching issues: {}".format(get_url))
 
     try:
-        response = github_session.get(get_url)
+        if not session:
+            response = github_session.get(get_url)
+        else:
+            response = session.get(get_url)
         response.raise_for_status()
     except requests.HTTPError:
         logger.error(
@@ -301,14 +309,17 @@ def fetch_issues(repository, state):
     return issues
 
 
-def fetch_comments(issue):
+def fetch_comments(issue, session=None):
     """
     Fetches text of all comments of the given issue.
     :param issue:
     :return: List of comments.
     """
     try:
-        response = github_session.get(issue.comments_url)
+        if not session:
+            response = github_session.get(issue.comments_url)
+        else:
+            response = session.get(issue.comments_url)
         response.raise_for_status()
         return [comment['body'] for comment in response.json()]
     except requests.HTTPError:
@@ -395,7 +406,6 @@ def console(repositories, auth, verbose, rules_file, interval, default_label, sk
 
         logger.info("Iteration done. Another will start in {} seconds.\n".format(interval))
         time.sleep(interval)
-
 
 
 @main.command()
