@@ -2,7 +2,6 @@ from setuptools import setup, find_packages
 import shutil
 import os
 
-shutil.copy("README.md", "gitbot/")
 shutil.copy("README.md", "README")
 
 with open("README.md") as file:
@@ -43,4 +42,3 @@ setup(
 )
 
 os.remove("README")
-os.remove("gitbot/README.md")
