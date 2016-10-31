@@ -53,8 +53,12 @@ class Rule:
 
     @staticmethod
     def parse(text):
-        parts = text.split("=>", 1)
-        return Rule(parts[0], parts[1])
+        if "=>" in text:
+            parts = text.split("=>", 1)
+            return Rule(parts[0], parts[1])
+        else:
+            logger.warn("Cannot parse rule \"{}\". There is no \"=>\".")
+            return None
 
 
 class Issue:
