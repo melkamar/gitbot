@@ -201,7 +201,7 @@ def process_issues(token, repository, default_label="", skip_labelled=True, proc
         process_issue(issue, default_label, process_comments, process_title, remove_current)
 
 
-def apply_labels(issue, labels, remove_current):
+def apply_labels(issue, labels):
     """
     Apply given labels to an issue on GitHub.
     :param issue: Issue object to which to apply labels.
@@ -216,19 +216,9 @@ def apply_labels(issue, labels, remove_current):
 
     logger.info("Applying labels {} to issue {}. ".format(labels, issue))
 
-    # Init data with the current labels - we do not want to overwrite any
-    data = {
-        "labels": list(labels)
-    }
+    logger.debug("  Sending PATCH to {}. Data: {}".format(patchurl, labels))
 
-    if not remove_current:
-        logger.info("Keeping original labels: {}".format(issue.labels))
-        for label in issue.labels:
-            data['labels'].append(label['name'])
-    else:
-        logger.warn("Removing original labels from issue {} (Original labels: {})".format(issue, issue.labels))
-
-    logger.debug("  Sending PATCH to {}. Data: {}".format(patchurl, data))
+    data={'labels': labels}
 
     try:
         res = github_session.patch(patchurl, json=data, headers={"Content-Type": "text/plain"})
@@ -238,7 +228,8 @@ def apply_labels(issue, labels, remove_current):
                                                                                                      res.content))
 
 
-def process_issue(issue, default_label="", process_comments=True, process_title=True, remove_current=False, session=None):
+def process_issue(issue, default_label="", process_comments=True, process_title=True, remove_current=False,
+                  predef_comments=None, predef_rules=None, dry_run=False):
     """
     Handle rule matching and label adding on a given issue.
     :param issue:
@@ -246,10 +237,19 @@ def process_issue(issue, default_label="", process_comments=True, process_title=
     :param process_comments:
     :param process_title:
     :param remove_current:
+    :param predef_comments: If set, issue will use those comments instead of polling GitHub for them.
+    :param predef_rules: If set, supplied rules will be used instead of global ones.
+    :param dry_run: If true, nothing will be actually done on GitHub.
     :return:
     """
     labels = []
-    for rule in rules:
+
+    if predef_rules:
+        rules_list = predef_rules
+    else:
+        rules_list = rules
+
+    for rule in rules_list:
         logger.debug("  Checking rule {}".format(rule))
         new_label = rule.check_fits(issue.body)
 
@@ -259,7 +259,11 @@ def process_issue(issue, default_label="", process_comments=True, process_title=
         # try to match anything beside comments first,
         # comments need to be fetched and that should be avoided if possible
         if not new_label and process_comments:
-            comments = fetch_comments(issue, session)
+            if not predef_comments:
+                comments = fetch_comments(issue)
+            else:
+                comments = predef_comments
+
             for comment in comments:
                 new_label = rule.check_fits(comment)
                 if new_label:
@@ -273,7 +277,22 @@ def process_issue(issue, default_label="", process_comments=True, process_title=
         logger.warning("No rule matches. Applying default label: {}".format(default_label))
         labels.append(default_label)
 
-    apply_labels(issue, labels, remove_current)
+    labels_added = len(labels) > 0
+    # Init data with the current labels
+    data = {
+        "labels": list(labels)
+    }
+
+    if not remove_current:
+        for label in issue.labels:
+            data['labels'].append(label['name'])
+    else:
+        logger.warn("Removing original labels from issue {} (Original labels: {})".format(issue, issue.labels))
+
+    if not dry_run and labels_added:
+        apply_labels(issue, labels)
+
+    return data.get('labels')
 
 
 def fetch_issues(repository, state, session=None):
