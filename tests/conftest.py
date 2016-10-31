@@ -17,6 +17,9 @@ with betamax.Betamax.configure() as config:
 
     config.cassette_library_dir = 'tests/fixtures/cassettes'
 
+    config.default_cassette_options['record_mode'] = 'once'
+
+
 @pytest.fixture
 def auth_session(betamax_session):
     betamax_session.headers.update({'Authorization': 'token ' + TOKEN, 'User-Agent': 'Python'})

@@ -1,7 +1,7 @@
 include LICENSE
-include gitbot/README.md
 include README.md
 include rules.cfg
 include auth.cfg.sample
+recursive-include tests *
 recursive-include gitbot/templates *
 recursive-include gitbot/static *
