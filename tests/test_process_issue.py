@@ -1,9 +1,6 @@
 import pytest
 from gitbot import github_issues_bot
 
-fetch_issues_url = 'https://api.github.com/repos/{}/issues?state={}'
-repository = "melkamar/mi-pyt-test-issues"
-
 rules = [
     github_issues_bot.Rule(".*", "everything"),
     github_issues_bot.Rule("title test", "title label"),
@@ -116,7 +113,7 @@ issues_param = [
 
 
 @pytest.mark.parametrize('issues_param', issues_param)
-def test_process_issue(auth_session, issues_param):
+def test_process_issue(issues_param):
     issue = issues_param[0]
     expected_labels = issues_param[1]
 
