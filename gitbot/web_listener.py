@@ -1,3 +1,4 @@
+import json
 import hashlib
 import hmac
 import os
@@ -22,7 +23,7 @@ def read_github_secret():
 
 if 'TESTING' in app.config:
     web_token = "foo-web-token"
-    HOOK_SECRET_KEY = "foo-secret-hook"
+    HOOK_SECRET_KEY = "ahoj"
 else:
     web_token = github_issues_bot.read_auth(os.path.join(github_issues_bot.get_app_dir(), "auth.cfg"), "auth",
                                             "gittoken")
@@ -59,8 +60,13 @@ def parse_repo(json_data):
 
 def check_secret_integrity():
     secret_header = request.headers['X-Hub-Signature']
+    if "=" not in secret_header:
+        print("false A")
+        return False
+
     sha_name, signature = secret_header.split('=')
     if sha_name != 'sha1':
+        print("false B")
         return False
 
     # HMAC requires its key to be bytes, but data is strings.
@@ -89,39 +95,51 @@ def handle_callback():
     """
     try:
         if not check_secret_integrity():
+            print("write_error")
             github_issues_bot.logger.error(
                 "Secret signature does not match!!! {} - Request will not be processed.".format(
                     request.headers['X-Hub-Signature']))
-            return "Secret signature does not match!!! {} - Request will not be processed.".format(
-                request.headers['X-Hub-Signature'])
+            print("return bro")
+            return json.dumps({'code': 1,
+                               "message": "Secret signature does not match: {}. The request will be ignored.".format(
+                                   request.headers['X-Hub-Signature'])}), 400
         else:
             github_issues_bot.logger.info("Secret signature did match.")
+
     except KeyError as e:
         github_issues_bot.logger.error(
             "Secret signature was not sent with request!!! It will not be processed.")
-        return "Secret signature was not sent with request!!! It will not be processed."
+        return json.dumps(
+            {"code": 2,
+             "message": "Secret signature was not sent with request!!! It will not be processed."}), 400
 
-    github_issues_bot.logger.debug("Processing callback. Request: {}".format(request.get_json()))
-    data = request.get_json()
+    github_issues_bot.logger.debug("Processing callback. Request: {}".format(request.get_json(force=True)))
+    data = request.get_json(force=True)
 
     try:
         if not should_process_issue(data):
             txt = "Not processing issue. Will only process actions: {}. Received: {}.".format(actions_to_process,
                                                                                               data['action'])
             github_issues_bot.logger.warning(txt)
-            return txt
+            return json.dumps({"code": 3,
+                    "message": txt}), 200
 
-        github_issues_bot.init_session(web_token)
+        issue = github_issues_bot.Issue.parse(data['issue'], parse_repo(data))
+        if not app.config['TESTING']:
+            github_issues_bot.init_session(web_token)
 
-        github_issues_bot.process_issue(github_issues_bot.Issue.parse(data['issue'], parse_repo(data)))
+            github_issues_bot.process_issue(issue)
     except KeyError as e:
         github_issues_bot.logger.warn("""Key was not found in request JSON. This may mean that GitHub
         sent a webhook for a non-issue event.""")
-        return """Key was not found in request JSON. This may mean that GitHub
-        sent a webhook for a non-issue event."""
+        return json.dumps({"code": 4,
+                           "message": """Key was not found in request JSON. This may mean that GitHub
+        sent a webhook for a non-issue event."""}), 400
 
     github_issues_bot.logger.info("Callback done.")
-    return "Callback done."
+    return json.dumps({"code": 5,
+                       "message": "Callback done.",
+                       "issue_number": issue.number}), 200
 
 
 readme_text = """# GitHub issues bot
