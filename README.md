@@ -1,5 +1,7 @@
 # GitHub issues bot
 
+![Travis status](https://travis-ci.com/melkamar/gitbot.svg?token=vMAJz6sAMcPRgk9vRaTy&branch=master)
+
 ## Description
 
 Will label issues on GitHub based on the issues' title, contents and/or comments. Labelling is determined by
