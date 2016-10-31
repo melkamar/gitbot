@@ -39,7 +39,7 @@ setup(
     },
     install_requires=['flask', 'click>=6', 'requests', 'appdirs', 'markdown', 'configparser'],
     setup_requires=['pytest-runner'],
-    tests_require=['pytest']
+    tests_require=['pytest', 'betamax']
 )
 
 os.remove("README")

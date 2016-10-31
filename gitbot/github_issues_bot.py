@@ -95,6 +95,9 @@ class Issue:
         title = json.get("title")
         number = json.get("number")
 
+        if not url or not comments_url or not title or not number:
+            return None
+
         if json.get("state") == "open":
             state_open = True
         else:
