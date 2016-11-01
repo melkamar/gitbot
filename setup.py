@@ -1,15 +1,12 @@
 from setuptools import setup, find_packages
-import shutil
 import os
 
-shutil.copy("README.md", "README")
-
-with open("README.md") as file:
+with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "README.md")) as file:
     long_description = file.read()
 
 setup(
     name='gitbot',
-    version='0.3.11',
+    version='0.4.2',
     description='Automatically label GitHub issues based on regexp rules.',
     long_description=long_description,
     author='Martin Melka',
@@ -40,5 +37,3 @@ setup(
     setup_requires=['pytest-runner'],
     tests_require=['pytest', 'betamax']
 )
-
-os.remove("README")

@@ -10,7 +10,17 @@ a set of regular expression rules.
 ### pip installation
 `pip install gitbot`
 
-Installs a `gitbot` executable.
+Also installs a `gitbot` executable.
+
+### Running tests
+* Clone this repository and run `python setup.py test` in the root directory. By default the tests that need authentication will be replayed from stored
+betamax cassettes. This should be enough in most cases.
+  * To re-generate betamax cassettes 
+    * have AUTH_FILE environment variable filled and pointing to `auth.cfg` file. (see `auth.cfg.sample` for example contents)
+    * have file `auth.cfg` filled with credentials and run `python setup.py test` in the root directory 
+* Download pip package via `pip download gitbot`. Then unzip `gitbot-x.x.x.zip`, cd into the directory
+and run `python setup.py test`. The same testing details as described above apply.
+
 
 
 ### Operation modes
