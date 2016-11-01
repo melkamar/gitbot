@@ -5,6 +5,11 @@ repository = "melkamar/mi-pyt-test-issues"
 
 
 def test_parse_correct(auth_session):
+    """
+    Test if Issues are parsed correctly by comparing the object's fields directly to JSON values.
+    :param auth_session:
+    :return:
+    """
     response = auth_session.get(fetch_issues_url.format(repository, 'all'))
 
     json = response.json()
@@ -20,6 +25,11 @@ def test_parse_correct(auth_session):
 
 
 def test_parse_fail(not_auth_session):
+    """
+    Test that no issue is created when an invalid JSON is passed.
+    :param not_auth_session:
+    :return:
+    """
     response = not_auth_session.get(fetch_issues_url.format(repository, 'all'))
     json = response.json()
 

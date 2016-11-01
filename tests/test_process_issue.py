@@ -11,6 +11,7 @@ rules = [
 # default_label | process_title | remove_current | predef_comments | predef_rules | dry_run | issues_param
 
 issues_param = [
+    # Only "everything" rule applies
     (
         github_issues_bot.Issue("http://test.org",
                                 "http://test.org/comments",
@@ -26,6 +27,8 @@ issues_param = [
         ["default_label_A", "default_label_B", "everything"],
         "", True, False, False, ["comment"], rules, True
     ),
+
+    # "everything" and "title label" rules apply
     (
         github_issues_bot.Issue("http://test.org",
                                 "http://test.org/comments",
@@ -42,7 +45,7 @@ issues_param = [
         "", True, False, False, ["comment test"], rules, True
     ),
 
-    # Test processing comments
+    # Test if comments are processed when flag is set
     (
         github_issues_bot.Issue("http://test.org",
                                 "http://test.org/comments",
@@ -59,7 +62,7 @@ issues_param = [
         "", True, True, False, ["comment test", "something else"], rules, True
     ),
 
-    # Test ignoring title
+    # Test if title is ignored when flag is set
     (
         github_issues_bot.Issue("http://test.org",
                                 "http://test.org/comments",
@@ -76,7 +79,7 @@ issues_param = [
         "", False, True, False, ["comment test", "something else"], rules, True
     ),
 
-    # Test default label
+    # Test if default label is applied when no other rule matches
     (
         github_issues_bot.Issue("http://test.org",
                                 "http://test.org/comments",
@@ -93,7 +96,7 @@ issues_param = [
         "default label", True, True, False, ["comment test", "something else"], [github_issues_bot.Rule('abcdxyz', 'something')], True
     ),
 
-    # Test removing current labels
+    # Test if current labels are correctly removed when flag is set
     (
         github_issues_bot.Issue("http://test.org",
                                 "http://test.org/comments",
@@ -114,6 +117,11 @@ issues_param = [
 
 @pytest.mark.parametrize('issues_param', issues_param)
 def test_process_issue(issues_param):
+    """
+    Various tests of issue labelling and flag/option handling, such as processing comments, ignoring title etc.
+    :param issues_param:
+    :return:
+    """
     issue = issues_param[0]
     expected_labels = issues_param[1]
 
