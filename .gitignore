@@ -1,1 +1,9 @@
 auth.cfg
+auth.cfg.old
+.eggs/
+.idea/
+dist/
+docs/_build/
+docs/bot.log
+gitbot.egg-info/
+gitbot/__pycache__/
