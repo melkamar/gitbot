@@ -6,10 +6,17 @@
 Welcome to Gitbot's documentation!
 ==================================
 
+Gitbot is an utility for automated labelling of GitHub issues. Issues are scanned either in a given interval,
+or as soon as a new one is created. Labels are then assigned to them based on a set of customizable regular expression
+rules.
+
 Contents:
 
 .. toctree::
    :maxdepth: 2
+
+   installation
+   usage
 
 
 
@@ -19,4 +26,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
