@@ -34,6 +34,6 @@ setup(
         ]
     },
     install_requires=['flask', 'click>=6', 'requests', 'appdirs', 'markdown', 'configparser'],
-    setup_requires=['pytest-runner'],
+    setup_requires=['pytest-runner', 'sphinx'],
     tests_require=['pytest', 'betamax']
 )
