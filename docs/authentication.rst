@@ -8,8 +8,8 @@ Authentication for Gitbot is defined in file ``auth.cfg``.
 By default, it is located next to the gitbot package, but can be changed via a command line parameter or when
 deploying as a WSGI app. When in doubt, run ``gitbot generate`` command.
 
-Contents
---------
+File contents
+-------------
 
 Contents of the authentication file are:
 

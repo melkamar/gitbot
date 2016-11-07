@@ -17,6 +17,8 @@ Contents:
 
    installation
    usage
+   authentication
+   rules
 
 
 
