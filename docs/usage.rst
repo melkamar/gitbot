@@ -10,6 +10,8 @@ Gitbot may be run in two ways:
    Runs as a web application. GitHub repositories that should be processed need to be set up with :ref:`webhooks-label`.
    Application can either be run using embedded webserver, or deployed as s WSGi application.
 
+Labels that will be applied to issues are defined in a rules file (see :ref:`rules-file`).
+
 .. _console-usage:
 
 Console mode
@@ -48,12 +50,51 @@ Gitbot in console mode is started as ``gitbot console [OPTIONS] REPOSITORIES...`
 
 Web server mode
 ---------------
-Babab
 
+Web server mode may be run from console with embedded server, or as a WSGI app. Both are described at the end of
+this section.
+
+In order to have web server Gitbot working, the following is necessary:
+
+- Publicly accessible (routable) server.
+- Correctly set up authentication token and webhook secret (see :ref:`authentication`).
+- Web hook set up for a repository for which the token has sufficient permissions (see :ref:`webhooks-label`).
+
+Running with embedded server
+****************************
+
+Embedded Gitbot server is started using ``gitbot web``. Unlike console mode, it is not currently possible to configure
+issue processing options.
+
+Running as WSGI application
+***************************
+
+To run Gitbot through a WSGI server, the following config is used::
+
+   import sys
+   path = '/path/to/script/folder'
+   if path not in sys.path:
+       sys.path.append(path)
+
+   from web_listener import app as application
 
 .. _webhooks-label:
 
-Web hooks
-*********
+GitHub web hooks
+----------------
 
-Something something
+In order to use Gitbot as a passive web server, GitHub needs to notify it via a HTTP POST every time an issue is
+created or edited. To do that, go to your GitHub repository and navigate to Settings > Webhooks > Add webhook, and fill
+in the following information:
+
+- Payload URL
+   URL where the notification should be sent. Should be ``<gitbot-address>/callback``, e.g.
+   ``https://example.com/callback``.
+- Content type
+   ``application/json`` is what we want.
+- Secret
+   Enter the same string you set up in the authentication file (see :ref:`authentication` for more details).
+- Which events will trigger this webhook?
+   Choose ``Let me select individual events`` > ``Issues``.
+
+GitHub will now send a notification every time an issue is created or edited and Gitbot will react to it. Neat.
