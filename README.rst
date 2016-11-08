@@ -13,6 +13,14 @@ Description
 Application will label issues on GitHub based on the issues' title, contents and/or
 comments. Labelling is determined by a set of regular expression rules.
 
+Documentation
+-------------
+
+For up-to-date documentation, refer to :ref:`documentation_`.
+
+.. _documentation: http://melkamargitbot.readthedocs.io/en/latest/index.html
+
+
 pip installation
 ~~~~~~~~~~~~~~~~
 
