@@ -52,6 +52,7 @@ Building documentation
 ~~~~~~~~~~~~~~~~~~~~~~
 
 To test and build the Gitbot documentation, do the following:
+
 - Change folder to ``docs``.
 - Run ``pip install -r requirements.txt``.
 - Run ``make html`` (or ``make.bat html`` on Windows) to build the documentation, or
