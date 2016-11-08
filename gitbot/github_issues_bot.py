@@ -220,7 +220,6 @@ class Issue:
         return issue
 
 
-
 def get_config_dir():
     return appdirs.user_config_dir("gitbot", "melkamar")
 
@@ -235,9 +234,16 @@ def get_pkg_dir():
 
 def init_session(token, session=None):
     """
-    Create an authorized session object with GitHub.
-    :param token: Auth token for GitHub.
-    :return: Requests session object.
+    Create an authorized session object for GitHub.
+
+    Args:
+        token(str): Authentication token for GitHub. See Tokens_.
+        session(requests.Session, optional): A session object to be used, if supplied, this method simply
+            sets the internal session object to the one passed in this parameter (instead of creating a new one).
+
+    .. _Tokens: https://help.github.com/articles/creating-an-access-token-for-command-line-use/
+
+    Returns: None, the session is set internally via a member variable.
     """
     global github_session
 
@@ -267,8 +273,15 @@ def init_rules(filename):
 
 def init_rules_logic(filename):
     """
-    Initialize global rules variable with rules defined in a file.
-    :param filename: File containing the rules.
+    Initialize global rules store with rules defined in a file. This method does not handle file existence, permissions
+    etc. That is the responsibility of its caller.
+
+    Args:
+        filename(str): Path to file containing the rules.
+
+    Returns:
+        None.
+
     """
     global rules
     rules = []
@@ -293,8 +306,25 @@ def init_rules_logic(filename):
 def process_issues(token, repository, default_label="", skip_labelled=True, process_comments=True,
                    process_closed_issues=False, process_title=True, remove_current=False):
     """
-    Main handling logic of the robot. Process issues in a given repository with the given settings.
+    Main handling logic of app. Processes issues in a given repository with the given settings.
     Parameters correspond to command-line arguments.
+
+    Args:
+        token(str): GitHub authentication token. Refer to Issues_.
+        repository(str): Name of the repository being processed. E.g. ``foobar/repo``
+        default_label(str, optional): Label that should be applied to an issue if no rule fits. If empty or None,
+            no default label is applied.
+        skip_labelled(bool): If true, issues that are already labelled will be skipped.
+        process_comments(bool): If true, comments on the issue will be processed as well. Otherwise, only body of the
+            issue is.
+        process_closed_issues(bool): If true, issues that are marked as closed will be processed as well as open ones.
+        process_title(bool): If true, title of the issue will be processed as well as its body.
+        remove_current(bool): If true, all current labels on issues will be removed and replaced by newly added ones.
+
+    Returns:
+        None.
+
+    .. _Issues: https://developer.github.com/v3/issues/
     """
     init_session(token)
 
@@ -318,9 +348,14 @@ def process_issues(token, repository, default_label="", skip_labelled=True, proc
 def apply_labels(issue, labels):
     """
     Apply given labels to an issue on GitHub.
-    :param issue: Issue object to which to apply labels.
-    :param labels: List of labels (strings) to apply.
-    :param remove_current: If true, all current labels on the issue will be removed.
+
+    Args:
+        issue(Issue): Issue object to which to apply labels.
+        labels(:obj:`list` of :obj:`str`): List of labels to apply.
+
+    Returns:
+        None
+
     """
 
     if not labels:
@@ -345,16 +380,51 @@ def apply_labels(issue, labels):
 def process_issue(issue, default_label="", process_comments=True, process_title=True, remove_current=False,
                   predef_comments=None, predef_rules=None, dry_run=False):
     """
-    Handle rule matching and label adding on a given issue.
-    :param issue:
-    :param default_label:
-    :param process_comments:
-    :param process_title:
-    :param remove_current:
-    :param predef_comments: If set, issue will use those comments instead of polling GitHub for them.
-    :param predef_rules: If set, supplied rules will be used instead of global ones.
-    :param dry_run: If true, nothing will be actually done on GitHub.
-    :return:
+    Handle logic of rule matching and labelling of a given issue, including sending a request to GitHub.
+
+    For details about parameters, see :func:`process_issues()`.
+
+    .. testsetup::
+
+       from gitbot.github_issues_bot import process_issue
+
+    Usage example:
+       - Create issue and expect a label to be assigned to it.
+           >>> test_issue = Issue("<url>", "<url>",
+           ...    [{'name':'labelA'}, {'name':'labelB'}], True, "Test issue",
+           ...    "Test body. My cool string.", 42, "example/foo")
+           >>> labels = process_issue(test_issue,
+           ...    predef_rules=[Rule(r'cool', 'cool label')], predef_comments=['comment'], dry_run=True)
+           >>> 'cool label' in labels
+           True
+           >>> sorted(labels)
+           ['cool label', 'labelA', 'labelB']
+
+       - Create issue and expect a label NOT to be assigned to it, only the original labels should stay.
+           >>> test_issue = Issue("<url>", "<url>",
+           ...    [{'name':'labelA'}, {'name':'labelB'}], True, "Test issue",
+           ...    "Test body. My cool string.", 42, "example/foo")
+           >>> labels = process_issue(test_issue,
+           ...   predef_rules=[Rule(r'hot', 'hot label')], predef_comments=['comment'], dry_run=True)
+           >>> 'hot label' in labels
+           False
+           >>> sorted(labels)
+           ['labelA', 'labelB']
+
+    Args:
+        issue(Issue): Issue to be processed.
+        default_label(str):
+        process_comments(bool):
+        process_title(bool):
+        remove_current(bool):
+        predef_comments(:obj:`list` of :obj:`str`, optional): If set, comments are not fetched from the issue, but instead the ones
+            supplied through this parameter are used. Useful for testing, not much else.
+        predef_rules(:obj:`list` of :obj:`Rule`, optional): If set, rules are not loaded from the rules file, but instead the ones
+            supplied through this parameter are used. Useful for testing, not much else.
+        dry_run(bool, optional): If true, issue is processed, but nothing is actually pushed to GitHub.
+
+    Returns:
+        :obj:`list` of :obj:`str`: Returns list of labels newly associated with the issue.
     """
     labels = []
 
@@ -413,8 +483,17 @@ def fetch_issues(repository, state, session=None):
     """
     Fetches all issues in a repository with the given state.
     :param repository:
-    :param state: Required state of issues. Allowed string values: all, open, closed.
+    :param state:
     :return: List of Issue objects.
+
+    Args:
+        repository(str): Name of the repository to fetch.
+        state(str): Issues in which states to fetch. Allowed string values: all, open, closed.
+        session(:obj:`requests.Session`, optional): If supplied, use this session object instead of the internal.
+
+    Returns:
+        :obj:`list` of :obj:`Issue`: Returns list of Issue objects parsed from the given repository.
+
     """
     get_url = fetch_issues_url.format(repository, state)
     logger.info("Fetching issues: {}".format(get_url))
@@ -445,8 +524,13 @@ def fetch_issues(repository, state, session=None):
 def fetch_comments(issue, session=None):
     """
     Fetches text of all comments of the given issue.
-    :param issue:
-    :return: List of comments.
+
+    Args:
+        issue(Issue): Issue for which to fetch comments.
+        session(:obj:`requests.Session`, optional): If supplied, use this session object instead of the internal.
+
+    Returns:
+        :obj:`list` of :obj:`str`: Returns list of strings - contents of comments.
     """
     try:
         if not session:
@@ -464,15 +548,15 @@ def fetch_comments(issue, session=None):
 
 def read_auth(filename, section, key):
     """
-    Some foo description of the read_auth method.
+    Reads a key from a section in a configuration ini-formatted file.
 
     Args:
         filename (str): Name of the authentication file.
         section (str): Section to read from, i.e. [section] in the auth file.
-        key (str): Concrete key inside the given section to read.
+        key (str): Particular key inside the given section to read.
 
     Returns:
-        str: Authentication token.
+        str: Value read from the file.
     """
     config = configparser.ConfigParser()
     try:
