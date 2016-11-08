@@ -20,6 +20,9 @@ Contents:
    authentication
    rules
 
+   source/gitbot
+   source/modules
+
 
 
 Indices and tables
