@@ -36,6 +36,14 @@ _____________________________________________
 
 
 class Rule:
+    """
+    Class representing a Gitbot labelling rule.
+
+    It contains two pieces of information - a regexp pattern and the associated label.
+
+    It also provides methods for ease of work with rules.
+    """
+
     def __init__(self, regex, label):
         self.label = label.strip()
         self.regex = re.compile(regex, re.IGNORECASE)
@@ -44,6 +52,30 @@ class Rule:
         return 'RULE: {}   --->   {}'.format(self.regex, self.label)
 
     def check_fits(self, text):
+        """
+        Check if this rule fits (applies to) the given text.
+
+        .. testsetup::
+
+           from gitbot.github_issues_bot import Rule
+
+        Usage example:
+           >>> rule = Rule("[Hh]ello", "welcoming")
+           >>> rule.check_fits("hello dev!")
+           'welcoming'
+           >>> rule.check_fits("Hello, how are you?")
+           'welcoming'
+           >>> rule.check_fits("Hell no.") is None
+           True
+
+
+        Args:
+            text (str): Text for which to test the rule.
+
+        Returns:
+            str: Label name if the rule does fit, or None if it does not fit.
+
+        """
         # logger.debug("  ## check_fits [{}] and reg [{}]".format(text, self.regex))
         if re.search(self.regex, text):
             # logger.debug("  ##    --> yeah, fits.")
@@ -53,6 +85,28 @@ class Rule:
 
     @staticmethod
     def parse(text):
+        """
+        Create a new Rule instance from a line of text.
+
+        .. testsetup::
+
+           from gitbot.github_issues_bot import Rule
+
+        Usage example:
+           >>> rule = Rule.parse("some\s+regexp=>new label")
+           >>> rule is not None
+           True
+           >>> rule.regex.pattern
+           'some\\\\s+regexp'
+           >>> rule.label
+           'new label'
+
+        Args:
+            text (str): String defining the Rule instance. The syntax is "regexp=>label_name".
+
+        Returns:
+           Rule: Returns a new instance of Rule if parsing succeeded, None otherwise.
+        """
         if "=>" in text:
             parts = text.split("=>", 1)
             return Rule(parts[0], parts[1])
@@ -62,6 +116,11 @@ class Rule:
 
 
 class Issue:
+    """
+    Class representing an issue on GitHub. It contains information relevant to labelling of the issue, but not all
+    the information that GitHub provides.
+    """
+
     def __init__(self, url, comments_url, labels, state_open, title, body, number, reponame):
         self.url = url
         self.comments_url = comments_url
@@ -82,29 +141,84 @@ class Issue:
         return len(self.labels) > 0
 
     @staticmethod
-    def parse(json, repository):
+    def parse(json_response, repository):
         """
-        Parse an issue from GitHub API response.
-        :param json: JSON response
-        :return:
+        Create an issue from GitHub API response.
+
+        .. testsetup::
+
+           from gitbot.github_issues_bot import Issue
+           import json
+
+        Usage example:
+           >>> issue_json = json.loads('''{
+           ...    "url": "https://api.github.com/repos/somethingsomething",
+           ...    "comments_url": "https://api.github.com/repos/somethingsomething/comments",
+           ...    "labels":[
+           ...       {
+           ...           "id": 208045946,
+           ...           "url": "https://api.github.com/repos/somethingsomething/labels/bug",
+           ...           "name": "bug",
+           ...           "color": "f29513",
+           ...           "default": true
+           ...       }
+           ...    ],
+           ...    "body": "This is a body of the issue.",
+           ...    "title": "This is a title.",
+           ...    "number": 666
+           ... }''')
+           >>> issue  = Issue.parse(issue_json, "somethingsomething")
+           >>> issue.body
+           'This is a body of the issue.'
+           >>> issue.title
+           'This is a title.'
+           >>> issue.number
+           666
+           >>> len(issue.labels)
+           1
+           >>> issue.url
+           'https://api.github.com/repos/somethingsomething'
+           >>> issue.comments_url
+           'https://api.github.com/repos/somethingsomething/comments'
+
+           >>> issue_json = json.loads('''{
+           ...    "url": "https://api.github.com/repos/somethingsomething",
+           ...    "comment": "this is an invalid json"
+           ... }''')
+           >>> issue = Issue.parse(issue_json, "something")
+           >>> issue is None
+           True
+
+
+        Args:
+            json_response (json): GitHub API response encoded in a json object.
+               It must contain a single object, not a list of objects. For details, refer to Issues_.
+            repository (str): Name of the repository the issue belongs to, e.g. ``username/somerepo``.
+
+        .. _Issues: https://developer.github.com/v3/issues/
+
+        Returns:
+            Issue: Issue instance if parsing succeeded, None otherwise.
+
         """
-        url = json.get("url")
-        labels = json.get("labels")
-        comments_url = json.get("comments_url")
-        body = json.get("body")
-        title = json.get("title")
-        number = json.get("number")
+        url = json_response.get("url")
+        labels = json_response.get("labels")
+        comments_url = json_response.get("comments_url")
+        body = json_response.get("body")
+        title = json_response.get("title")
+        number = json_response.get("number")
 
         if not url or not comments_url or not title or not number:
             return None
 
-        if json.get("state") == "open":
+        if json_response.get("state") == "open":
             state_open = True
         else:
             state_open = False
 
         issue = Issue(url, comments_url, labels, state_open, title, body, number, repository)
         return issue
+
 
 
 def get_config_dir():
@@ -218,7 +332,7 @@ def apply_labels(issue, labels):
 
     logger.debug("  Sending PATCH to {}. Data: {}".format(patchurl, labels))
 
-    data={'labels': labels}
+    data = {'labels': labels}
 
     try:
         res = github_session.patch(patchurl, json=data, headers={"Content-Type": "text/plain"})
@@ -349,6 +463,17 @@ def fetch_comments(issue, session=None):
 
 
 def read_auth(filename, section, key):
+    """
+    Some foo description of the read_auth method.
+
+    Args:
+        filename (str): Name of the authentication file.
+        section (str): Section to read from, i.e. [section] in the auth file.
+        key (str): Concrete key inside the given section to read.
+
+    Returns:
+        str: Authentication token.
+    """
     config = configparser.ConfigParser()
     try:
         config.read(filename)
