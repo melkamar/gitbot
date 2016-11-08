@@ -1,6 +1,7 @@
 GitHub issues bot
 =================
 
+.. class:: center
 .. figure:: https://travis-ci.com/melkamar/gitbot.svg?token=vMAJz6sAMcPRgk9vRaTy&branch=master
    :alt: Travis status
 .. image:: https://readthedocs.org/projects/melkamargitbot/badge/?version=latest
