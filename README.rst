@@ -51,9 +51,11 @@ Running tests
 Building documentation
 ~~~~~~~~~~~~~~~~~~~~~~
 
-To build the Gitbot documentation, go into the ``docs`` folder and run ``make html`` (or ``make.bat html`` on Windows).
-
-To run the Gitbot documentation tests (doctest), go into the ``docs`` folder and run ``make doctest`` (or ``make.bat doctest`` on Windows).
+To test and build the Gitbot documentation, do the following:
+- Change folder to ``docs``.
+- Run ``pip install -r requirements.txt``.
+- Run ``make html`` (or ``make.bat html`` on Windows) to build the documentation, or
+- Run ``make doctest`` (or ``make.bat doctest`` on Windows) to run documentation tests.
 
 
 Operation modes

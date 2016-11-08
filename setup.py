@@ -6,7 +6,7 @@ with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "README.rst")
 
 setup(
     name='gitbot',
-    version='0.4.2',
+    version='0.5',
     description='Automatically label GitHub issues based on regexp rules.',
     long_description=long_description,
     author='Martin Melka',
@@ -34,6 +34,6 @@ setup(
         ]
     },
     install_requires=['flask', 'click>=6', 'requests', 'appdirs', 'markdown', 'configparser'],
-    setup_requires=['pytest-runner', 'sphinx'],
+    setup_requires=['pytest-runner'],
     tests_require=['pytest', 'betamax']
 )
