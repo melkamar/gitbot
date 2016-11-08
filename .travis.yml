@@ -3,5 +3,7 @@ python:
 - '3.5'
 install:
 - python setup.py install
+- pip install -r docs/requirements.txt
 script:
 - python setup.py test --addopts -v
+- cd docs && make doctest
