@@ -40,6 +40,15 @@ Running tests
    ``python setup.py test``. The same testing details as described above
    apply.
 
+
+Building documentation
+~~~~~~~~~~~~~~~~~~~~~~
+
+To build the Gitbot documentation, go into the ``docs`` folder and run ``make html`` (or ``make.bat html`` on Windows).
+
+To run the Gitbot documentation tests (doctest), go into the ``docs`` folder and run ``make doctest`` (or ``make.bat doctest`` on Windows).
+
+
 Operation modes
 ~~~~~~~~~~~~~~~
 
