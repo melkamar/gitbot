@@ -20,6 +20,7 @@ Rules' format
 -------------
 
 Rules are specified one-per-line in the following format::
+
    [pattern]=>[label]
 
 For example, following pattern would assign ``generic`` label to all issues::
